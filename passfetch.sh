@@ -82,7 +82,6 @@ clear_clipboard() {
 
 trap clear_clipboard INT EXIT TERM
 
-
 echo -n "clearing clipboard "
 for i in $(seq $ttl); do
     echo -n "."
