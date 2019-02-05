@@ -13,7 +13,6 @@ print_usage() {
     echo "Options:"
     echo "  -h, --help      print this message"
     echo "  -u, --user      copy username of search term to clipboard"
-    echo "  -p, --pass      copy password of search term to clipboard"
     echo "  -l, --list      list titles of all entries"
     echo "  -g, --gen LEN   generate a password of byte length LEN"
     echo ""
@@ -41,14 +40,6 @@ case "$1" in
 	[ -z "$2" ] && echo "missing search term" && exit 1
 	search_term="$2"
 	;;
-    -g|--genp)
-	if ! [[ "$2" =~ ^[0-9]+$ ]]; then
-            echo "-g/--genp needs integer argument"
-	    exit 1
-	fi
-	echo $(head -c $2 /dev/urandom | base64)
-	exit 0
-	;;
     -l|--list)
 	cmd="l"
 	;;
@@ -59,7 +50,7 @@ case "$1" in
 esac
 
 if [ "$cmd" == "l" ]; then
-    gpg -d $passdb 2>/dev/null | grep -E '^t:.*' | cut -d ':' -f2
+    gpg -d $passdb 2>/dev/null | grep -E '^t:.*' | cut -d ':' -f2 | sort
     exit 0
 fi
 
@@ -77,6 +68,7 @@ ttl=10
 
 clear_clipboard() {
     echo -n | xclip -selection c
+    echo ""
     exit 0
 }
 
