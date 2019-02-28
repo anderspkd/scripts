@@ -17,10 +17,14 @@ format-mail-json () {
 }
 
 count-unread-mails () {
-    local newdirs="$MAILDIR/fastmail/*/new/"
+    local newdirs1="$MAILDIR/fastmail/*/new/"
+    local newdirs2="$MAILDIR/work/*/new/"
     local unread=0
 
-    for mdir in $(find $newdirs -type d | grep -v 'sent\|trash\|drafts'); do
+    for mdir in $(find $newdirs1 -type d | grep -v 'sent\|trash\|drafts'); do
+	unread=$((unread + $(find "$mdir" -type f | wc -l)))
+    done
+    for mdir in $(find $newdirs1 -type d | grep -v 'Sent\|Trash\|Drafts'); do
 	unread=$((unread + $(find "$mdir" -type f | wc -l)))
     done
 
