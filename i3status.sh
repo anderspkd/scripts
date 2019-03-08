@@ -1,45 +1,62 @@
 #!/usr/bin/env bash
 
-# Script that augments i3bar with information about number of unread
-# e-mails. Adapted from
-# https://github.com/i3/i3status/blob/master/contrib/net-speed.sh
-#
+shopt -s lastpipe
 
-ENVELOPE="EMAIL:"
 MAILDIR="$HOME/mail"
-
-MAIL_JSON=""
-
-format-mail-json () {
-    local unread="$1"
-    local color="$2"
-    MAIL_JSON="\"color\":\"$color\",\"full_text\":\"$ENVELOPE $unread\""
-}
+MAIL_STR=""
+NUNREAD=0
 
 count-unread-mails () {
-    local newdirs1="$MAILDIR/fastmail/*/new/"
-    local newdirs2="$MAILDIR/work/*/new/"
+    local maildir="${MAILDIR}/$1/"
     local unread=0
 
-    for mdir in $(find $newdirs1 -type d | grep -v 'sent\|trash\|drafts'); do
-	unread=$((unread + $(find "$mdir" -type f | wc -l)))
-    done
-    for mdir in $(find $newdirs1 -type d | grep -v 'Sent\|Trash\|Drafts'); do
-	unread=$((unread + $(find "$mdir" -type f | wc -l)))
-    done
-
-    if (( $unread > 0 )); then
-	format-mail-json $unread "#00FF00"
-    else
-	format-mail-json 0 "#FFFFFF"
-    fi
+    find "${maildir}" -type d -print0 |
+	while read -d '' -r d1; do
+	    if ! [ -d "${d1}/new" ]; then
+		continue
+	    fi
+	    IFS='/' read -ra dname <<< "${d1}"
+	    dname="${dname[-1]}"
+	    unset IFS
+	    case "${dname}" in
+		'sent'|'Sent'|'Sent Items'|'trash'|'Trash'|'drafts'|'Drafts' )
+		    continue
+		    ;;
+	    esac
+	    # unread=$((unread + $(find "${d1}/new" -type f | wc -l)))
+	    nnew=$(find "${d1}/new" -type f | wc -l)
+	    unread=$(($unread + $nnew))
+	done
+    NUNREAD=$unread
 }
 
-i3status | (read line && echo "$line" && read line && echo "$line" && read line && echo "$line" && count-unread-mails &&
+format-mail () {
+    local num_unread=$NUNREAD
+    local envelope="EMAIL $1:"
+    local color="#FFFFFF"  # white
+    if (( $num_unread > 0 )); then
+	color="#00FF00"  # read
+    fi
+    s="\"${envelope} ${num_unread}\""
+    MAILSTR="\"color\":\"$color\",\"full_text\":$s"
+}
+
+i3status | (
+read line && echo "$line" &&  # {"version": ....}
+read line && echo "$line" &&  # [
+read line && echo "$line" &&  # [ old i3 stuff ... ]
 while :
 do
     read line
-    count-unread-mails
-    echo ",[{\"name\":\"mail\",${MAIL_JSON}},${line#,\[}" || exit 1
+    count-unread-mails "work"
+    format-mail "w"
+    s1=$MAILSTR
+    count-unread-mails "fastmail"
+    format-mail $unread "p"
+    s2=$MAILSTR
+    echo ",[\
+{\"name\":\"mail\" ,$s1},\
+{\"name\":\"mail\" ,$s2},\
+${line#,\[}" || exit 1
 done
 )
