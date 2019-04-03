@@ -2,6 +2,7 @@
 
 if [ "$#" -eq 0 ]; then
     echo "no mailboxes provided. Nothing to do"
+    exit 0
 fi
 
 mailboxes=${@:1}
