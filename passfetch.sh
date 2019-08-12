@@ -54,7 +54,7 @@ if [ "$cmd" == "l" ]; then
     exit 0
 fi
 
-content=$(gpg -d $passdb 2>/dev/null | sed -n "/^t:$search_term/,/^$cmd:/p")
+content=$(gpg -d $passdb 2>/dev/null | sed -n "/^t:$search_term\$/,/^$cmd:/p")
 
 if [ -z "$content" ]; then
     echo "nothing found for \"$search_term\""
